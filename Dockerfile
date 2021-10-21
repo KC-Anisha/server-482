@@ -25,9 +25,6 @@ WORKDIR /
 # Copy files from previous build container
 COPY --from=build /app/main ./
 
-# Add environment variables
-ENV LOGGLY_TOKEN=3978ab6c-18d0-4709-8d65-38a8b73f88a3
-
 # Expose 8080
 EXPOSE 8080
 
