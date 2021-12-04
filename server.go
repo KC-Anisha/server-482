@@ -117,19 +117,27 @@ func AllHandler(w http.ResponseWriter, r *http.Request) {
 	// Create DynamoDB client
 	svc := dynamodb.New(sess)
 
-	// Scan the DB for all items
-	out, err := svc.Scan(&dynamodb.ScanInput{
-		TableName: aws.String("akc-citybikes"),
-	})
-	if err != nil {
-		log.Fatalf("Got error scanning DB: %s", err)
-	}
+	var allResponse []Item
 
-	// Unmarshal response
-	allResponse := []Item{}
-	err = dynamodbattribute.UnmarshalListOfMaps(out.Items, &allResponse)
-	if err != nil {
-		panic(fmt.Sprintf("Failed to unmarshal Record, %v", err))
+	// Scan the DB for all items
+	scanErr := svc.ScanPages(&dynamodb.ScanInput{
+		TableName: aws.String("akc-citybikes"),
+	}, func(page *dynamodb.ScanOutput, last bool) bool {
+		recs := []Item{}
+
+		err := dynamodbattribute.UnmarshalListOfMaps(page.Items, &recs)
+		if err != nil {
+			panic(fmt.Sprintf("failed to unmarshal Dynamodb Scan Items, %v", err))
+		}
+
+		allResponse = append(allResponse, recs...)
+
+		return true
+	})
+
+	// Error scanning DB
+	if scanErr != nil {
+		panic(fmt.Sprintf("Got error scanning DB, %v", scanErr))
 	}
 
 	// JSON Response
